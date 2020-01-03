@@ -792,16 +792,20 @@ struct PythonPrintImpl {
   void printConstant(TaggedStringStream& stmt, const IValue& v) {
     std::stringstream ss;
     if (v.isTensor()) {
+      std::cout << "printConstant Tensor" << std::endl;
       ss << "CONSTANTS.c" << getOrAddTensorConstant(v.toTensor());
     } else if (v.isString()) {
+      std::cout << "printConstant String" << std::endl;
       c10::printQuotedString(ss, v.toStringRef());
     } else if (v.isDevice()) {
+      std::cout << "printConstant Device" << std::endl;
       std::stringstream device_stream;
       device_stream << v.toDevice();
       ss << "torch.device(";
       c10::printQuotedString(ss, device_stream.str());
       ss << ")";
     } else if (v.isTensorList()) {
+      std::cout << "printConstant TensorList" << std::endl;
       ss << "[";
       const char* delim = "";
       for (const at::Tensor& t : v.toTensorListRef()) {
@@ -810,14 +814,20 @@ struct PythonPrintImpl {
       }
       ss << "]";
     } else if (v.isBoolList()) {
+      std::cout << "printConstant BoolList" << std::endl;
       printMaybeAnnotatedConstantList(ss, "bool", v.toBoolList().size(), v);
     } else if (v.isIntList()) {
+      std::cout << "printConstant IntList" << std::endl;
       printMaybeAnnotatedConstantList(ss, "int", v.toIntListRef().size(), v);
     } else if (v.isDoubleList()) {
+      std::cout << "printConstant DoubleList" << std::endl;
       printMaybeAnnotatedConstantList(
           ss, "float", v.toDoubleListRef().size(), v);
     } else {
+      std::cout << "printConstant operator<<" << std::endl;
       ss << v;
+      std::cout << "isNone:" << v.isNone() << "isInt: " << v.isInt() << " isString: " << v.isString() << " isBool:" << v.isBool() << " isDouble:" << v.isDouble() << std::endl;
+      std::cout << "ss.str():" << ss.str() << std::endl;
     }
     stmt << ss.str();
   }
@@ -1260,13 +1270,15 @@ struct PythonPrintImpl {
     size_t numConstants = moduleType->numConstants();
     for (size_t i = 0; i < numConstants; i++) {
       const auto& name = moduleType->getConstantName(i);
-      const auto& v = moduleType->getConstant(name).value();
+      IValue v = moduleType->getConstant(name).value();
 
       indent();
       body_ << name << " : " << "Final[" << v.type()->python_str() << "] = ";
       auto ss = std::make_shared<TaggedStringStream>(&source_range_stack_);
+      std::cout << "trying to save " << name << " " << ss->str() << std::endl;
       printConstant(*ss, v);
       body_ << ss->str() << "\n";
+      std::cout << "Saving constant " << name << "=" << ss->str() << std::endl;
     }
   }
 
