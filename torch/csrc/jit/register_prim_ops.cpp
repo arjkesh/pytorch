@@ -365,46 +365,6 @@ RegisterOperators reg(
          },
          aliasAnalysisFromSchema()),
      Operator(
-         "aten::Int(Tensor a) -> int",
-         [](Stack& stack) {
-           at::Tensor a;
-           pop(stack, a);
-           push(stack, a.item<int64_t>());
-           return 0;
-         },
-         aliasAnalysisFromSchema()),
-     Operator(
-         "aten::Int(bool a) -> int",
-         [](Stack& stack) {
-           bool b;
-           pop(stack, b);
-           push(stack, (int)b);
-           return 0;
-         },
-         aliasAnalysisFromSchema()),
-     Operator(
-         "aten::Int(float a) -> int",
-         [](Stack& stack) {
-           double d;
-           pop(stack, d);
-           push(stack, (int64_t)d);
-           return 0;
-         },
-         aliasAnalysisFromSchema()),
-     Operator(
-         "aten::Int(Scalar a) -> int",
-         [](Stack& stack) {
-           IValue scalar;
-           pop(stack, scalar);
-           if (scalar.isInt()) {
-             push(stack, std::move(scalar));
-           } else {
-             push(stack, static_cast<int64_t>(scalar.toDouble()));
-           }
-           return 0;
-         },
-         aliasAnalysisFromSchema()),
-     Operator(
          "aten::Float(Tensor a) -> float",
          [](Stack& stack) {
            at::Tensor a;
@@ -3691,3 +3651,27 @@ static auto reg4 =
 } // namespace
 } // namespace jit
 } // namespace torch
+
+using at::Scalar;
+static auto registry_prim = torch::RegisterOperators().op("aten::Int.Tensor(Tensor a) -> int",
+  torch::RegisterOperators::options().catchAllKernel(
+  [](at::Tensor a) -> int64_t {
+    return a.item<int64_t>();
+}).aliasAnalysis(c10::AliasAnalysisKind::FROM_SCHEMA)
+).op("aten::Int.bool(bool a) -> int",
+  torch::RegisterOperators::options().catchAllKernel(
+  [](bool b) -> int64_t {
+    return static_cast<int64_t>(b);
+}).aliasAnalysis(c10::AliasAnalysisKind::FROM_SCHEMA)
+).op("aten::Int.float(float a) -> int",
+  torch::RegisterOperators::options().catchAllKernel(
+  [](double d) -> int64_t {
+    return static_cast<int64_t>(d);
+}).aliasAnalysis(c10::AliasAnalysisKind::FROM_SCHEMA)
+).op("aten::Int.Scalar(Scalar a) -> int",
+  torch::RegisterOperators::options().catchAllKernel(
+  [](Scalar scalar) -> int64_t {
+    return scalar.toInt();
+}).aliasAnalysis(c10::AliasAnalysisKind::FROM_SCHEMA)
+);
+
