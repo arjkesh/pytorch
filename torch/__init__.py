@@ -11,7 +11,6 @@ on an NVIDIA GPU with compute capability >= 3.0.
 """
 
 import os
-import shlex
 import subprocess
 import sys
 import platform
